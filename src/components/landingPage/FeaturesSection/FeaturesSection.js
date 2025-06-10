@@ -1,7 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './FeaturesSection.css';
 
 const FeaturesSection = () => {
+  const navigate = useNavigate();
+
+  const handleStartTrial = () => {
+    window.open('/chat', '_blank');
+  };
+
   const features = [
     {
       icon: '🤖',
@@ -50,7 +57,7 @@ const FeaturesSection = () => {
             <span className="features__title-highlight"> Modern AI Interaction</span>
           </h2>
           <p className="features__subtitle">
-            Discover the advanced capabilities that make TheInfini AI the ultimate platform 
+            Discover the advanced capabilities that make TheInfini AI the ultimate platform
             for intelligent conversations and AI-powered assistance.
           </p>
         </div>
@@ -64,11 +71,11 @@ const FeaturesSection = () => {
                 </div>
                 <h3 className="features__card-title">{feature.title}</h3>
               </div>
-              
+
               <p className="features__card-description">
                 {feature.description}
               </p>
-              
+
               <ul className="features__highlights">
                 {feature.highlights.map((highlight, highlightIndex) => (
                   <li key={highlightIndex} className="features__highlight-item">
@@ -87,7 +94,7 @@ const FeaturesSection = () => {
             <p className="features__cta-description">
               Join thousands of users who are already leveraging the power of advanced AI conversations.
             </p>
-            <button className="btn btn-primary btn-large">
+            <button className="btn btn-primary btn-large" onClick={handleStartTrial}>
               Start Your Free Trial
             </button>
           </div>

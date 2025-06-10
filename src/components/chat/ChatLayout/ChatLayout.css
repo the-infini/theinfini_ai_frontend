@@ -1,0 +1,14 @@
+.chat-layout {
+  display: flex;
+  height: 100vh;
+  background-color: var(--primary-bg);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .chat-layout {
+    flex-direction: column;
+  }
+}

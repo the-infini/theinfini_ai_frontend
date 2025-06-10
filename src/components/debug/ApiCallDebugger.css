@@ -1,0 +1,146 @@
+.api-debugger {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  z-index: 9999;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.api-debugger.hidden .api-debugger__content {
+  display: none;
+}
+
+.api-debugger__toggle button {
+  background: #333;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  width: 100%;
+}
+
+.api-debugger__toggle button:hover {
+  background: #444;
+}
+
+.api-debugger__content {
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.api-debugger__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 8px;
+}
+
+.api-debugger__header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.api-debugger__actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.api-debugger__actions button {
+  background: #444;
+  color: #fff;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.btn-log:hover {
+  background: #0066cc;
+}
+
+.btn-clear:hover {
+  background: #cc0000;
+}
+
+.btn-test:hover {
+  background: #009688;
+}
+
+.btn-info:hover {
+  background: #ff9800;
+}
+
+.api-debugger__stats {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.api-call-stat {
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.endpoint-name {
+  font-weight: bold;
+  color: #4CAF50;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.call-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.call-count {
+  color: #ccc;
+}
+
+.duplicate-warning {
+  color: #ff9800;
+  font-weight: bold;
+}
+
+.call-times {
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.duplicates-list {
+  background: #2a1a1a;
+  border: 1px solid #444;
+  border-radius: 3px;
+  padding: 4px;
+  margin-top: 4px;
+}
+
+.duplicate-item {
+  color: #ff9800;
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+.duplicate-item:last-child {
+  margin-bottom: 0;
+}

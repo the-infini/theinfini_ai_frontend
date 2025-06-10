@@ -1,0 +1,302 @@
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+/* Modal Container */
+.modal {
+  background: var(--secondary-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Modal Sizes */
+.modal--small {
+  width: 100%;
+  max-width: 400px;
+}
+
+.modal--medium {
+  width: 100%;
+  max-width: 600px;
+}
+
+.modal--large {
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Modal Header */
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.modal__close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal__close-btn:hover:not(:disabled) {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.modal__close-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Modal Content */
+.modal__content {
+  padding: 24px;
+}
+
+/* Confirmation Modal Styles */
+.confirmation-modal__content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.confirmation-modal__message {
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+  text-align: center;
+}
+
+.confirmation-modal__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* Modal Buttons */
+.modal-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-btn--primary {
+  background: var(--accent-color);
+  color: var(--primary-bg);
+}
+
+.modal-btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.modal-btn--secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.modal-btn--secondary:hover:not(:disabled) {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+.modal-btn--danger {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.modal-btn--danger:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* Loading State */
+.modal-btn__loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: loadingTextPulse 2s ease-in-out infinite;
+}
+
+@keyframes loadingTextPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.modal-btn__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  border-radius: 50%;
+  animation: modalSpinner 0.8s linear infinite;
+  position: relative;
+}
+
+.modal-btn__spinner::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid transparent;
+  border-bottom: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+  border-radius: 50%;
+  animation: modalSpinnerReverse 1.2s linear infinite;
+  opacity: 0.6;
+}
+
+/* Enhanced spinner animations */
+@keyframes modalSpinner {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes modalSpinnerReverse {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* Loading overlay for modal content */
+.modal--loading {
+  position: relative;
+}
+
+.modal--loading .modal__content {
+  position: relative;
+}
+
+.modal--loading .modal__content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  z-index: 1;
+  pointer-events: none;
+  backdrop-filter: blur(1px);
+}
+
+/* Pulse effect for loading button */
+.modal-btn--danger.modal-btn--loading {
+  animation: dangerPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dangerPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 16px;
+  }
+
+  .modal {
+    max-height: 95vh;
+  }
+
+  .modal__header {
+    padding: 16px 20px;
+  }
+
+  .modal__content {
+    padding: 20px;
+  }
+
+  .modal__title {
+    font-size: 18px;
+  }
+
+  .confirmation-modal__actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-btn {
+    width: 100%;
+  }
+}

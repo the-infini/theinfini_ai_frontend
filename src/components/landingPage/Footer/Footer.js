@@ -55,14 +55,14 @@ const Footer = () => {
         <div className="footer__content">
           <div className="footer__main">
             <div className="footer__brand">
-              <h3 className="footer__logo">TheInfini AI</h3>
+              <h3 className="footer__logo">the infini ai</h3>
               <p className="footer__description">
-                Empowering conversations with advanced AI technology. 
+                Empowering conversations with advanced AI technology.
                 Experience the future of intelligent interactions today.
               </p>
               <div className="footer__social">
                 {socialLinks.map((social, index) => (
-                  <a 
+                  <a
                     key={index}
                     href={social.href}
                     className="footer__social-link"
@@ -80,7 +80,7 @@ const Footer = () => {
                 <ul className="footer__link-list">
                   {footerLinks.product.map((link, index) => (
                     <li key={index}>
-                      <button 
+                      <button
                         onClick={() => scrollToSection(link.href)}
                         className="footer__link"
                       >
@@ -96,7 +96,7 @@ const Footer = () => {
                 <ul className="footer__link-list">
                   {footerLinks.company.map((link, index) => (
                     <li key={index}>
-                      <button 
+                      <button
                         onClick={() => scrollToSection(link.href)}
                         className="footer__link"
                       >
@@ -112,7 +112,7 @@ const Footer = () => {
                 <ul className="footer__link-list">
                   {footerLinks.support.map((link, index) => (
                     <li key={index}>
-                      <button 
+                      <button
                         onClick={() => scrollToSection(link.href)}
                         className="footer__link"
                       >
@@ -128,7 +128,7 @@ const Footer = () => {
                 <ul className="footer__link-list">
                   {footerLinks.legal.map((link, index) => (
                     <li key={index}>
-                      <button 
+                      <button
                         onClick={() => scrollToSection(link.href)}
                         className="footer__link"
                       >
@@ -148,8 +148,8 @@ const Footer = () => {
                 Get the latest updates on new features and AI advancements.
               </p>
               <div className="footer__newsletter-form">
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   placeholder="Enter your email"
                   className="footer__newsletter-input"
                 />
@@ -164,14 +164,14 @@ const Footer = () => {
         <div className="footer__bottom">
           <div className="footer__bottom-content">
             <p className="footer__copyright">
-              © {currentYear} TheInfini AI. All rights reserved.
+              © {currentYear} the infini ai. All rights reserved.
             </p>
             <div className="footer__bottom-links">
               <span className="footer__status">
                 <span className="footer__status-dot"></span>
                 All systems operational
               </span>
-              <button 
+              <button
                 onClick={scrollToTop}
                 className="footer__back-to-top"
                 aria-label="Back to top"

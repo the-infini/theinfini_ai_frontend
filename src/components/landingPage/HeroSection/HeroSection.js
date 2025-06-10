@@ -1,12 +1,19 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './HeroSection.css';
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   const scrollToFeatures = () => {
     const element = document.getElementById('features');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleChatNow = () => {
+    window.open('/chat', '_blank');
   };
 
   return (
@@ -25,7 +32,7 @@ const HeroSection = () => {
             </h1>
 
             <p className="hero__subtitle">
-              Unlock the power of advanced AI with TheInfini AI. Chat with multiple AI models,
+              Unlock the power of advanced AI with the infini ai. Chat with multiple AI models,
               get intelligent responses, and explore limitless possibilities in one seamless platform.
             </p>
 
@@ -45,8 +52,8 @@ const HeroSection = () => {
             </div>
 
             <div className="hero__actions">
-              <button className="btn btn-primary btn-large hero__cta">
-                Start Chatting Now
+              <button className="btn btn-primary btn-large hero__cta" onClick={handleChatNow}>
+                Chat Now
               </button>
               <button
                 className="btn btn-secondary btn-large"

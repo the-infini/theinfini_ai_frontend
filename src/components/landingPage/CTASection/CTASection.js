@@ -1,14 +1,34 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 import './CTASection.css';
 
 const CTASection = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
+      navigate('/chat');
+    } else {
+      navigate('/signin');
+    }
+  };
+
+  const scrollToFeatures = () => {
+    const element = document.getElementById('features');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="cta">
       <div className="cta__background">
         <div className="cta__gradient"></div>
         <div className="cta__particles"></div>
       </div>
-      
+
       <div className="container">
         <div className="cta__content">
           <div className="cta__text">
@@ -16,12 +36,12 @@ const CTASection = () => {
               Ready to Transform Your
               <span className="cta__title-highlight"> AI Experience?</span>
             </h2>
-            
+
             <p className="cta__subtitle">
-              Join thousands of users who are already experiencing the future of AI conversations. 
+              Join thousands of users who are already experiencing the future of AI conversations.
               Start your journey with TheInfini AI today and unlock unlimited possibilities.
             </p>
-            
+
             <div className="cta__features">
               <div className="cta__feature">
                 <span className="cta__feature-icon">✨</span>
@@ -36,16 +56,16 @@ const CTASection = () => {
                 <span>Enterprise-grade security and privacy</span>
               </div>
             </div>
-            
+
             <div className="cta__actions">
-              <button className="btn btn-primary btn-large cta__primary-btn">
-                Get Started Free
+              <button className="btn btn-primary btn-large cta__primary-btn" onClick={handleGetStarted}>
+                {isAuthenticated ? 'Go to Chat' : 'Start Your Free Trial'}
               </button>
-              <button className="btn btn-secondary btn-large">
-                View Pricing
+              <button className="btn btn-secondary btn-large" onClick={scrollToFeatures}>
+                Learn More
               </button>
             </div>
-            
+
             <div className="cta__trust-indicators">
               <div className="cta__trust-item">
                 <span className="cta__trust-number">10K+</span>
@@ -61,14 +81,14 @@ const CTASection = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="cta__visual">
             <div className="cta__demo-container">
               <div className="cta__demo-header">
                 <h3>Try it now!</h3>
                 <p>Experience AI conversation instantly</p>
               </div>
-              
+
               <div className="cta__demo-chat">
                 <div className="cta__demo-message cta__demo-message--user">
                   <div className="cta__demo-avatar cta__demo-avatar--user">👤</div>
@@ -76,16 +96,16 @@ const CTASection = () => {
                     Hello! Can you help me write a creative story?
                   </div>
                 </div>
-                
+
                 <div className="cta__demo-message cta__demo-message--ai">
                   <div className="cta__demo-avatar cta__demo-avatar--ai">🤖</div>
                   <div className="cta__demo-content">
-                    Absolutely! I'd love to help you create a creative story. 
-                    What genre or theme interests you? Fantasy, sci-fi, mystery, 
+                    Absolutely! I'd love to help you create a creative story.
+                    What genre or theme interests you? Fantasy, sci-fi, mystery,
                     or something else entirely?
                   </div>
                 </div>
-                
+
                 <div className="cta__demo-typing">
                   <div className="cta__demo-avatar cta__demo-avatar--ai">🤖</div>
                   <div className="cta__typing-indicator">
@@ -95,10 +115,10 @@ const CTASection = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="cta__demo-input">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Type your message here..."
                   className="cta__demo-field"
                   readOnly

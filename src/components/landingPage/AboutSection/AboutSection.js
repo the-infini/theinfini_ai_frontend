@@ -1,7 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './AboutSection.css';
 
 const AboutSection = () => {
+  const navigate = useNavigate();
+
+  const handleStartTrial = () => {
+    window.open('/chat', '_blank');
+  };
+
   const stats = [
     { number: '10K+', label: 'Active Users', description: 'Growing community of AI enthusiasts' },
     { number: '1M+', label: 'Messages Processed', description: 'Conversations powered by AI' },
@@ -25,18 +32,18 @@ const AboutSection = () => {
           <div className="about__text">
             <h2 className="about__title">
               About
-              <span className="about__title-highlight"> TheInfini AI</span>
+              <span className="about__title-highlight"> the infini ai</span>
             </h2>
-            
+
             <p className="about__description">
-              TheInfini AI represents the next generation of AI-powered conversation platforms. 
-              Built with cutting-edge technology and designed for both casual users and professionals, 
+              the infini ai represents the next generation of AI-powered conversation platforms.
+              Built with cutting-edge technology and designed for both casual users and professionals,
               our platform provides seamless access to multiple AI models in one unified interface.
             </p>
-            
+
             <p className="about__description">
-              We believe in democratizing access to advanced AI capabilities while maintaining 
-              the highest standards of security, privacy, and user experience. Our mission is to 
+              We believe in democratizing access to advanced AI capabilities while maintaining
+              the highest standards of security, privacy, and user experience. Our mission is to
               make AI conversations more natural, helpful, and accessible to everyone.
             </p>
 
@@ -85,9 +92,9 @@ const AboutSection = () => {
           <div className="about__mission-content">
             <h3 className="about__mission-title">Our Mission</h3>
             <p className="about__mission-text">
-              To bridge the gap between human creativity and artificial intelligence, 
-              creating a platform where technology enhances human potential rather than replacing it. 
-              We envision a future where AI conversations are as natural and meaningful as 
+              To bridge the gap between human creativity and artificial intelligence,
+              creating a platform where technology enhances human potential rather than replacing it.
+              We envision a future where AI conversations are as natural and meaningful as
               human interactions, empowering users to achieve more than they ever thought possible.
             </p>
             <div className="about__mission-values">
@@ -107,6 +114,12 @@ const AboutSection = () => {
                 <span className="about__value-icon">🌍</span>
                 <span>Accessibility</span>
               </div>
+            </div>
+
+            <div className="about__cta">
+              <button className="btn btn-primary btn-large" onClick={handleStartTrial}>
+                Start Your Free Trial
+              </button>
             </div>
           </div>
         </div>
