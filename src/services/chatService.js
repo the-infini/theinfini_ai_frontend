@@ -110,6 +110,15 @@ class ChatService {
     }
   }
 
+  // Regenerate message
+  async regenerateMessage(messageId, options = {}) {
+    try {
+      return await streamingService.streamRegenerateMessage(messageId, options);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Helper method to handle errors
   handleError(error) {
     if (error.response?.data?.message) {

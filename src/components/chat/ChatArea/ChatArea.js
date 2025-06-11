@@ -76,21 +76,32 @@ const ChatArea = ({ isSidebarOpen, onToggleSidebar }) => {
     <div className="chat-area">
       {/* Header */}
       <div className="chat-area__header">
-        <div className="chat-area__title">
-          <h1>
-            {currentProject ? (
-              <>📁 {currentProject.name}</>
-            ) : currentThread ? (
-              <>💬 {currentThread.name}</>
-            ) : (
-              'AI Chat'
+        <div className="chat-area__header-left">
+          <button
+            className="chat-area__hamburger"
+            onClick={onToggleSidebar}
+            title="Toggle sidebar"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+          <div className="chat-area__title">
+            <h1>
+              {currentProject ? (
+                <>📁 {currentProject.name}</>
+              ) : currentThread ? (
+                <>💬 {currentThread.name}</>
+              ) : (
+                'AI Chat'
+              )}
+            </h1>
+            {(currentProject || currentThread) && (
+              <span className="chat-area__subtitle">
+                {currentProject ? 'Project Chat' : 'Regular Chat'}
+              </span>
             )}
-          </h1>
-          {(currentProject || currentThread) && (
-            <span className="chat-area__subtitle">
-              {currentProject ? 'Project Chat' : 'Regular Chat'}
-            </span>
-          )}
+          </div>
         </div>
         <button className="chat-area__share">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">

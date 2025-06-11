@@ -202,6 +202,26 @@ class StreamingService {
   }
 
   /**
+   * Stream regenerate message
+   * Uses messageId to regenerate AI response
+   */
+  async streamRegenerateMessage(messageId, options = {}) {
+    const { llmModel, ...streamOptions } = options;
+
+    const data = {
+      messageId
+    };
+
+    // Include llmModel if provided
+    if (llmModel) {
+      data.llmModel = llmModel;
+    }
+
+    const response = await this.createStreamingRequest('/chat/regenerate', data);
+    return this.parseSSEStream(response, streamOptions);
+  }
+
+  /**
    * Handle streaming errors
    */
   handleStreamingError(error) {

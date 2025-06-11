@@ -539,14 +539,23 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .sidebar--open {
-    width: 100%;
-    position: absolute;
-    z-index: 1000;
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
     height: 100vh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar--open {
+    width: 280px;
+    transform: translateX(0);
   }
 
   .sidebar--closed {
-    display: none;
+    width: 280px;
+    transform: translateX(-100%);
   }
 }

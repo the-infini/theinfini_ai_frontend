@@ -146,6 +146,12 @@
   font-size: 14px;
 }
 
+.message-list__regenerated-badge {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
 .message-list__streaming-indicator {
   display: flex;
   align-items: center;
@@ -204,21 +210,53 @@
   margin-bottom: 8px;
 }
 
-.message-list__message-text code {
-  background: var(--primary-bg);
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.9em;
+/* Markdown integration styles */
+.message-list__markdown {
+  margin: 0;
 }
 
-.message-list__message-text strong {
-  font-weight: 600;
+.message-list__markdown .markdown-paragraph:last-child {
+  margin-bottom: 0;
 }
 
-.message-list__message-text em {
-  font-style: italic;
+.message-list__markdown .markdown-heading:first-child {
+  margin-top: 0;
 }
+
+.message-list__markdown .markdown-code-block {
+  margin: 0.75em 0;
+}
+
+.message-list__markdown .markdown-list {
+  margin: 0.5em 0;
+}
+
+.message-list__markdown .markdown-blockquote {
+  margin: 0.75em 0;
+}
+
+/* User message markdown styling */
+.message-list__markdown--user .markdown-paragraph {
+  margin: 0.25em 0;
+}
+
+.message-list__markdown--user .markdown-paragraph:first-child {
+  margin-top: 0;
+}
+
+.message-list__markdown--user .markdown-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.message-list__markdown--user .markdown-code-block {
+  margin: 0.5em 0;
+}
+
+.message-list__markdown--user .markdown-list {
+  margin: 0.25em 0;
+}
+
+
 
 .message-list__message-time {
   font-size: 12px;
@@ -236,6 +274,14 @@
 
 .message-list__copy-btn {
   opacity: 1 !important;
+}
+
+.message-list__copy-btn[title="Copied!"] {
+  color: #28ca42;
+}
+
+.message-list__copy-btn[title="Copied!"]:hover {
+  color: #28ca42;
 }
 
 .message-list__action-btn {
@@ -260,6 +306,90 @@
 .message-list__action-btn svg {
   width: 16px;
   height: 16px;
+}
+
+.message-list__action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.message-list__action-btn--loading {
+  opacity: 0.8;
+}
+
+/* Small loading spinner for regenerate button */
+.message-list__loading-spinner--small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Error display */
+.message-list__error {
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.message-list__error-content {
+  background: var(--error-bg, #fee);
+  border: 1px solid var(--error-border, #fcc);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.message-list__error-text {
+  color: var(--error-color, #c33);
+  font-size: 14px;
+  flex: 1;
+}
+
+.message-list__error-close {
+  background: none;
+  border: none;
+  color: var(--error-color, #c33);
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.message-list__error-close:hover {
+  background-color: var(--error-hover-bg, #fdd);
+}
+
+.message-list__error-upgrade-btn {
+  background: #fcd469;
+  border: none;
+  color: #000;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.message-list__error-upgrade-btn:hover {
+  background: #f5c842;
+  transform: translateY(-1px);
 }
 
 /* Responsive Design */

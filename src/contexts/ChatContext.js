@@ -32,6 +32,10 @@ const initialState = {
   streamingError: null,
   currentStreamingMessage: null,
 
+  // Regeneration state
+  regeneratingMessages: new Set(), // Set of message IDs being regenerated
+  regenerationError: null,
+
   // Session management
   currentSessionId: sessionManager.getCurrentSessionId(), // For guest chat continuity
 
@@ -66,6 +70,12 @@ const CHAT_ACTIONS = {
   SET_CURRENT_STREAMING_MESSAGE: 'SET_CURRENT_STREAMING_MESSAGE',
   RESET_STREAMING: 'RESET_STREAMING',
 
+  // Regeneration
+  SET_REGENERATING_MESSAGE: 'SET_REGENERATING_MESSAGE',
+  REMOVE_REGENERATING_MESSAGE: 'REMOVE_REGENERATING_MESSAGE',
+  SET_REGENERATION_ERROR: 'SET_REGENERATION_ERROR',
+  CLEAR_REGENERATION_ERROR: 'CLEAR_REGENERATION_ERROR',
+
   // Threads
   SET_THREADS: 'SET_THREADS',
   ADD_THREADS: 'ADD_THREADS',
@@ -92,6 +102,9 @@ const CHAT_ACTIONS = {
   ADD_MESSAGES: 'ADD_MESSAGES',
   ADD_MESSAGE: 'ADD_MESSAGE',
   UPDATE_MESSAGE: 'UPDATE_MESSAGE',
+  UPDATE_MESSAGE_ID: 'UPDATE_MESSAGE_ID',
+  UPDATE_MESSAGE_ID_AND_CONTENT: 'UPDATE_MESSAGE_ID_AND_CONTENT',
+  REMOVE_MESSAGE: 'REMOVE_MESSAGE',
 
   // Models
   SET_AVAILABLE_MODELS: 'SET_AVAILABLE_MODELS',
@@ -150,6 +163,34 @@ const chatReducer = (state, action) => {
         streamingResponse: '',
         streamingError: null,
         currentStreamingMessage: null
+      };
+
+    case CHAT_ACTIONS.SET_REGENERATING_MESSAGE:
+      const updatedRegeneratingMessages = new Set(state.regeneratingMessages);
+      updatedRegeneratingMessages.add(action.payload);
+      return {
+        ...state,
+        regeneratingMessages: updatedRegeneratingMessages
+      };
+
+    case CHAT_ACTIONS.REMOVE_REGENERATING_MESSAGE:
+      const filteredRegeneratingMessages = new Set(state.regeneratingMessages);
+      filteredRegeneratingMessages.delete(action.payload);
+      return {
+        ...state,
+        regeneratingMessages: filteredRegeneratingMessages
+      };
+
+    case CHAT_ACTIONS.SET_REGENERATION_ERROR:
+      return {
+        ...state,
+        regenerationError: action.payload
+      };
+
+    case CHAT_ACTIONS.CLEAR_REGENERATION_ERROR:
+      return {
+        ...state,
+        regenerationError: null
       };
 
     case CHAT_ACTIONS.SET_THREADS:
@@ -309,6 +350,34 @@ const chatReducer = (state, action) => {
         messages: state.messages.map(message =>
           message.id === action.payload.id ? { ...message, ...action.payload } : message
         )
+      };
+
+    case CHAT_ACTIONS.UPDATE_MESSAGE_ID:
+      return {
+        ...state,
+        messages: state.messages.map(message =>
+          message.id === action.payload.oldId ? { ...message, id: action.payload.newId } : message
+        )
+      };
+
+    case CHAT_ACTIONS.UPDATE_MESSAGE_ID_AND_CONTENT:
+      return {
+        ...state,
+        messages: state.messages.map(message =>
+          message.id === action.payload.oldId ? {
+            ...message,
+            id: action.payload.newId,
+            response: action.payload.response,
+            message: action.payload.message,
+            isStreaming: action.payload.isStreaming
+          } : message
+        )
+      };
+
+    case CHAT_ACTIONS.REMOVE_MESSAGE:
+      return {
+        ...state,
+        messages: state.messages.filter(message => message.id !== action.payload)
       };
 
     case CHAT_ACTIONS.SET_AVAILABLE_MODELS:
@@ -616,16 +685,46 @@ export const ChatProvider = ({ children }) => {
       }
 
       if (result && result.response) {
-        // Update the AI message with final response
-        dispatch({
-          type: CHAT_ACTIONS.UPDATE_MESSAGE,
-          payload: {
-            id: aiMessage.id,
-            response: result.response,
-            message: result.response,
-            isStreaming: false
-          }
-        });
+        // Extract message ID from completion metadata if available
+        const backendMessageId = result.metadata?.messageId;
+
+        if (backendMessageId) {
+          // Update both user and AI messages with proper backend-based IDs
+          const newUserMessageId = `${backendMessageId}-user`;
+          const newAiMessageId = `${backendMessageId}-ai`;
+
+          // Update user message ID
+          dispatch({
+            type: CHAT_ACTIONS.UPDATE_MESSAGE_ID,
+            payload: {
+              oldId: userMessage.id,
+              newId: newUserMessageId
+            }
+          });
+
+          // Update AI message with final response and new ID
+          dispatch({
+            type: CHAT_ACTIONS.UPDATE_MESSAGE_ID_AND_CONTENT,
+            payload: {
+              oldId: aiMessage.id,
+              newId: newAiMessageId,
+              response: result.response,
+              message: result.response,
+              isStreaming: false
+            }
+          });
+        } else {
+          // Fallback: just update content without changing ID
+          dispatch({
+            type: CHAT_ACTIONS.UPDATE_MESSAGE,
+            payload: {
+              id: aiMessage.id,
+              response: result.response,
+              message: result.response,
+              isStreaming: false
+            }
+          });
+        }
 
         // Handle conversation continuity based on metadata from response
         if (result.metadata) {
@@ -721,7 +820,10 @@ export const ChatProvider = ({ children }) => {
 
   // Select thread
   const selectThread = async (thread) => {
+    // Clear current messages first to avoid showing old messages
+    dispatch({ type: CHAT_ACTIONS.SET_MESSAGES, payload: [] });
     dispatch({ type: CHAT_ACTIONS.SET_CURRENT_THREAD, payload: thread });
+    dispatch({ type: CHAT_ACTIONS.SET_CURRENT_PROJECT, payload: null });
     await loadMessages(thread.id);
   };
 
@@ -819,9 +921,156 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  // Helper function to extract backend message ID from frontend message
+  const extractBackendMessageId = (message) => {
+    // Handle different message ID formats
+    const messageId = message.id;
+
+    // Case 1: Already a proper UUID (from API messages with -ai/-user suffix)
+    if (messageId.includes('-ai') || messageId.includes('-user')) {
+      const baseId = messageId.replace(/-(?:ai|user)$/, '');
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(baseId)) {
+        return baseId;
+      }
+    }
+
+    // Case 2: Direct UUID (shouldn't happen in UI but handle it)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(messageId)) {
+      return messageId;
+    }
+
+    // Case 3: Regenerated messages (regenerated-*)
+    // These should use their parentMessageId
+    if (messageId.startsWith('regenerated-') && message.parentMessageId) {
+      return message.parentMessageId;
+    }
+
+    // Case 4: Temporary streaming messages (temp-ai-*, temp-user-*) or other formats
+    // These don't have backend IDs yet, so they can't be regenerated
+    return null;
+  };
+
+  // Regenerate message
+  const regenerateMessage = async (messageId, llmModel = null) => {
+    try {
+      // Clear any previous regeneration errors
+      dispatch({ type: CHAT_ACTIONS.CLEAR_REGENERATION_ERROR });
+
+      // Mark message as being regenerated
+      dispatch({ type: CHAT_ACTIONS.SET_REGENERATING_MESSAGE, payload: messageId });
+
+      // Find the original message to get its details
+      const originalMessage = state.messages.find(msg =>
+        msg.id === messageId || msg.id === `${messageId}-ai` || msg.id === `${messageId}-user`
+      );
+
+      if (!originalMessage) {
+        throw new Error('Original message not found');
+      }
+
+      // Determine the actual message ID to send to backend
+      let actualMessageId;
+
+      if (originalMessage.isRegenerated && originalMessage.parentMessageId) {
+        // If this is a regenerated message, use the parent message ID
+        actualMessageId = originalMessage.parentMessageId;
+      } else {
+        // Extract the actual message ID based on message type
+        actualMessageId = extractBackendMessageId(originalMessage);
+      }
+
+      // Validate that we have a proper UUID format for the backend
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!actualMessageId || !uuidRegex.test(actualMessageId)) {
+        throw new Error('Cannot regenerate this message. Only AI responses from completed conversations can be regenerated.');
+      }
+
+      // Create placeholder for regenerated response
+      const regeneratedMessage = {
+        id: `regenerated-${Date.now()}`,
+        message: '',
+        response: '',
+        isUserMessage: false,
+        isStreaming: true,
+        isRegenerated: true,
+        parentMessageId: actualMessageId,
+        createdAt: new Date().toISOString()
+      };
+
+      // Add regenerated message to the list
+      dispatch({
+        type: CHAT_ACTIONS.ADD_MESSAGE,
+        payload: regeneratedMessage
+      });
+
+      // Set up streaming callbacks
+      const streamCallbacks = {
+        onStart: (data) => {
+          console.log('Regeneration stream started:', data);
+        },
+        onChunk: (content, fullResponse) => {
+          // Update the regenerated message with streaming content
+          dispatch({
+            type: CHAT_ACTIONS.UPDATE_MESSAGE,
+            payload: {
+              id: regeneratedMessage.id,
+              response: fullResponse,
+              message: fullResponse,
+              isStreaming: true
+            }
+          });
+        },
+        onComplete: (fullResponse, data) => {
+          console.log('Regeneration stream completed:', data);
+          // Update the regenerated message with final response
+          dispatch({
+            type: CHAT_ACTIONS.UPDATE_MESSAGE,
+            payload: {
+              id: regeneratedMessage.id,
+              response: fullResponse,
+              message: fullResponse,
+              isStreaming: false
+            }
+          });
+        },
+        onError: (error) => {
+          console.error('Regeneration streaming error:', error);
+          dispatch({ type: CHAT_ACTIONS.SET_REGENERATION_ERROR, payload: error.message });
+
+          // Remove the failed regenerated message
+          dispatch({
+            type: CHAT_ACTIONS.REMOVE_MESSAGE,
+            payload: regeneratedMessage.id
+          });
+        }
+      };
+
+      // Call the regeneration service
+      const result = await chatService.regenerateMessage(actualMessageId, {
+        llmModel,
+        ...streamCallbacks
+      });
+
+      return { success: true, data: result };
+    } catch (error) {
+      dispatch({ type: CHAT_ACTIONS.SET_REGENERATION_ERROR, payload: error.message });
+      throw error;
+    } finally {
+      // Remove message from regenerating set
+      dispatch({ type: CHAT_ACTIONS.REMOVE_REGENERATING_MESSAGE, payload: messageId });
+    }
+  };
+
   // Clear error
   const clearError = () => {
     dispatch({ type: CHAT_ACTIONS.CLEAR_ERROR });
+  };
+
+  // Clear regeneration error
+  const clearRegenerationError = () => {
+    dispatch({ type: CHAT_ACTIONS.CLEAR_REGENERATION_ERROR });
   };
 
   const value = {
@@ -833,6 +1082,7 @@ export const ChatProvider = ({ children }) => {
     setSelectedModel,
     sendMessage,
     sendStreamingMessage,
+    regenerateMessage,
     setSessionId,
     createProject,
     searchProjects,
@@ -845,6 +1095,7 @@ export const ChatProvider = ({ children }) => {
     deleteThread,
     updateThreadName,
     clearError,
+    clearRegenerationError,
     dispatch,
     CHAT_ACTIONS,
   };
