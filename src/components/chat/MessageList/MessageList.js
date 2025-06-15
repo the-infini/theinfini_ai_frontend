@@ -179,12 +179,36 @@ const MessageList = () => {
               /* User Message */
               <div className="message-list__message message-list__message--user">
                 <div className="message-list__message-content">
-                  <div className="message-list__message-text">
-                    <MarkdownRenderer
-                      content={message.message || ''}
-                      className="message-list__markdown message-list__markdown--user"
-                    />
-                  </div>
+                  {/* Attachment Display */}
+                  {message.attachmentName && (
+                    <div className="message-list__attachment">
+                      <div className="message-list__attachment-icon">
+                        {message.attachmentType?.startsWith('image/') ? '🖼️' :
+                         message.attachmentType === 'application/pdf' ? '📄' :
+                         message.attachmentType?.includes('word') ? '📝' :
+                         message.attachmentType?.includes('sheet') ? '📊' : '📎'}
+                      </div>
+                      <div className="message-list__attachment-info">
+                        <div className="message-list__attachment-name">{message.attachmentName}</div>
+                        {message.attachmentSize && (
+                          <div className="message-list__attachment-size">
+                            {(message.attachmentSize / 1024 / 1024).toFixed(2)} MB
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Message Text */}
+                  {message.message && (
+                    <div className="message-list__message-text">
+                      <MarkdownRenderer
+                        content={message.message || ''}
+                        className="message-list__markdown message-list__markdown--user"
+                      />
+                    </div>
+                  )}
+
                   <div className="message-list__message-time">
                     {formatTime(message.createdAt)}
                   </div>

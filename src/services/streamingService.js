@@ -1,4 +1,5 @@
 import sessionManager from '../utils/sessionManager';
+import fileUploadService from './fileUploadService';
 
 class StreamingService {
   constructor() {
@@ -218,6 +219,48 @@ class StreamingService {
     }
 
     const response = await this.createStreamingRequest('/chat/regenerate', data);
+    return this.parseSSEStream(response, streamOptions);
+  }
+
+  /**
+   * Stream chat message with file attachment
+   */
+  async streamChatMessageWithFile(message, file, options = {}) {
+    const { sessionId, llmModel = 'gpt-3.5-turbo', ...streamOptions } = options;
+
+    const response = await fileUploadService.streamChatMessageWithFile(message, file, {
+      sessionId,
+      llmModel
+    });
+
+    return this.parseSSEStream(response, streamOptions);
+  }
+
+  /**
+   * Stream thread message with file attachment
+   */
+  async streamThreadMessageWithFile(message, file, options = {}) {
+    const { threadId, llmModel = 'gpt-3.5-turbo', ...streamOptions } = options;
+
+    const response = await fileUploadService.streamThreadMessageWithFile(message, file, {
+      threadId,
+      llmModel
+    });
+
+    return this.parseSSEStream(response, streamOptions);
+  }
+
+  /**
+   * Stream project message with file attachment
+   */
+  async streamProjectMessageWithFile(projectId, message, file, options = {}) {
+    const { threadId, llmModel = 'gpt-3.5-turbo', ...streamOptions } = options;
+
+    const response = await fileUploadService.streamProjectMessageWithFile(projectId, message, file, {
+      threadId,
+      llmModel
+    });
+
     return this.parseSSEStream(response, streamOptions);
   }
 

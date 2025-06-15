@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useChat } from '../../../contexts/ChatContext';
 import ChatInput from '../ChatInput/ChatInput';
 import MessageList from '../MessageList/MessageList';
+import fileUploadService from '../../../services/fileUploadService';
 import './ChatArea.css';
 
 const ChatArea = ({ isSidebarOpen, onToggleSidebar }) => {
@@ -14,9 +15,14 @@ const ChatArea = ({ isSidebarOpen, onToggleSidebar }) => {
     isSending,
     isStreaming,
     sendStreamingMessage,
+    sendStreamingMessageWithFile,
     error,
     clearError
   } = useChat();
+
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragError, setDragError] = useState(null);
+  const chatInputRef = useRef(null);
 
   const getUserName = () => {
     if (user?.firstName) {
@@ -72,8 +78,79 @@ const ChatArea = ({ isSidebarOpen, onToggleSidebar }) => {
     }
   };
 
+  const handleSendMessageWithFile = async (message, file) => {
+    try {
+      // Use streaming with file attachment
+      await sendStreamingMessageWithFile(
+        message,
+        file,
+        currentThread?.id,
+        currentProject?.id
+        // selectedModel will be used automatically from context
+      );
+    } catch (error) {
+      console.error('Failed to send message with file:', error);
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    if (!isSending && !isStreaming) {
+      setIsDragOver(true);
+      setDragError(null);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    // Only hide overlay if leaving the chat area entirely
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragOver(false);
+      setDragError(null);
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    setDragError(null);
+
+    if (isSending || isStreaming) {
+      setDragError('Cannot upload file while sending message');
+      return;
+    }
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    if (files.length > 1) {
+      setDragError('Please drop only one file at a time');
+      return;
+    }
+
+    const file = files[0];
+
+    // Validate file
+    const validation = fileUploadService.validateFile(file);
+    if (!validation.isValid) {
+      setDragError(validation.errors.join(', '));
+      return;
+    }
+
+    // Pass the file to ChatInput component to handle as attachment
+    if (chatInputRef.current && chatInputRef.current.handleFileSelect) {
+      chatInputRef.current.handleFileSelect(file);
+    }
+  };
+
   return (
-    <div className="chat-area">
+    <div
+      className="chat-area"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Header */}
       <div className="chat-area__header">
         <div className="chat-area__header-left">
@@ -161,11 +238,42 @@ const ChatArea = ({ isSidebarOpen, onToggleSidebar }) => {
       {/* Chat Input */}
       <div className="chat-area__input-container">
         <ChatInput
+          ref={chatInputRef}
           onSendMessage={handleSendMessage}
+          onSendMessageWithFile={handleSendMessageWithFile}
           disabled={isSending || isStreaming}
           isLoading={isSending || isStreaming}
         />
       </div>
+
+      {/* Drag and Drop Overlay */}
+      {isDragOver && (
+        <div className="chat-area__drag-overlay">
+          <div className="chat-area__drag-content">
+            <div className="chat-area__drag-icon">📎</div>
+            <div className="chat-area__drag-text">Drop file here to attach</div>
+            <div className="chat-area__drag-subtext">
+              Max 5MB • Images, PDFs, Documents, Text files
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drag Error Display */}
+      {dragError && (
+        <div className="chat-area__drag-error">
+          <div className="chat-area__drag-error-content">
+            <span className="chat-area__drag-error-icon">⚠️</span>
+            <span className="chat-area__drag-error-message">{dragError}</span>
+            <button
+              className="chat-area__drag-error-close"
+              onClick={() => setDragError(null)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

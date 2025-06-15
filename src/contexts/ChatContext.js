@@ -3,6 +3,7 @@ import chatService from '../services/chatService';
 import projectService from '../services/projectService';
 import modelService from '../services/modelService';
 import sessionManager from '../utils/sessionManager';
+import streamingService from '../services/streamingService';
 import { useAuth } from './AuthContext';
 
 // Initial state
@@ -222,21 +223,49 @@ const chatReducer = (state, action) => {
       return { ...state, currentThread: action.payload, currentProject: null };
 
     case CHAT_ACTIONS.UPDATE_THREAD:
+      const threadUpdate = action.payload;
+
+      // Update in main threads array
+      const updatedMainThreads = state.threads.map(thread =>
+        thread.id === threadUpdate.id ? { ...thread, ...threadUpdate } : thread
+      );
+
+      // Update in project threads as well
+      const updatedProjectThreadsForUpdate = { ...state.projectThreads };
+      Object.keys(updatedProjectThreadsForUpdate).forEach(projectId => {
+        updatedProjectThreadsForUpdate[projectId] = updatedProjectThreadsForUpdate[projectId].map(thread =>
+          thread.id === threadUpdate.id ? { ...thread, ...threadUpdate } : thread
+        );
+      });
+
       return {
         ...state,
-        threads: state.threads.map(thread =>
-          thread.id === action.payload.id ? { ...thread, ...action.payload } : thread
-        ),
-        currentThread: state.currentThread?.id === action.payload.id
-          ? { ...state.currentThread, ...action.payload }
+        threads: updatedMainThreads,
+        projectThreads: updatedProjectThreadsForUpdate,
+        currentThread: state.currentThread?.id === threadUpdate.id
+          ? { ...state.currentThread, ...threadUpdate }
           : state.currentThread
       };
 
     case CHAT_ACTIONS.DELETE_THREAD:
+      const threadIdToDelete = action.payload;
+
+      // Remove from main threads array
+      const updatedThreads = state.threads.filter(thread => thread.id !== threadIdToDelete);
+
+      // Remove from project threads as well
+      const updatedProjectThreads = { ...state.projectThreads };
+      Object.keys(updatedProjectThreads).forEach(projectId => {
+        updatedProjectThreads[projectId] = updatedProjectThreads[projectId].filter(
+          thread => thread.id !== threadIdToDelete
+        );
+      });
+
       return {
         ...state,
-        threads: state.threads.filter(thread => thread.id !== action.payload),
-        currentThread: state.currentThread?.id === action.payload ? null : state.currentThread
+        threads: updatedThreads,
+        projectThreads: updatedProjectThreads,
+        currentThread: state.currentThread?.id === threadIdToDelete ? null : state.currentThread
       };
 
     case CHAT_ACTIONS.SET_PROJECTS:
@@ -728,10 +757,43 @@ export const ChatProvider = ({ children }) => {
 
         // Handle conversation continuity based on metadata from response
         if (result.metadata) {
-          const { sessionId, threadId } = result.metadata;
+          const { sessionId, threadId, chatId } = result.metadata;
 
-          // Update session ID for chat conversations
-          if (sessionId && !threadId && !projectId) {
+          // Handle chatId from guest chat that becomes a thread
+          if (chatId && !projectId) {
+            // Update session ID for chat conversations if sessionId is also present
+            if (sessionId && !threadId) {
+              dispatch({ type: CHAT_ACTIONS.SET_CURRENT_SESSION_ID, payload: sessionId });
+            }
+
+            // For guest chat that becomes a thread, fetch thread details using chatId
+            // This handles the case where streaming completes and we get a chatId
+            try {
+              // Try to get thread details using the chatId
+              // The API should return thread details if a thread was created from this chat
+              const threadResponse = await chatService.getThreadDetails(chatId);
+              if (threadResponse.success) {
+                const newThread = threadResponse.data;
+
+                // Set as current thread
+                dispatch({ type: CHAT_ACTIONS.SET_CURRENT_THREAD, payload: newThread });
+
+                // Add to general threads list if it's a new thread
+                const existingThread = state.threads.find(thread => thread.id === newThread.id);
+                if (!existingThread) {
+                  dispatch({ type: CHAT_ACTIONS.ADD_NEW_THREAD, payload: newThread });
+                  console.log('Added new thread from chatId to sidebar:', newThread.name || newThread.id);
+                } else {
+                  // Update existing thread with latest details (including name)
+                  dispatch({ type: CHAT_ACTIONS.UPDATE_THREAD, payload: newThread });
+                  console.log('Updated thread details from chatId:', newThread.name || newThread.id);
+                }
+              }
+            } catch (error) {
+              console.log('No thread found for chatId (this is normal for guest chat):', error.message);
+            }
+          } else if (sessionId && !threadId && !projectId) {
+            // Fallback: Handle sessionId for backward compatibility
             dispatch({ type: CHAT_ACTIONS.SET_CURRENT_SESSION_ID, payload: sessionId });
           }
 
@@ -754,6 +816,13 @@ export const ChatProvider = ({ children }) => {
                       payload: { projectId, thread: newThread }
                     });
                     console.log('Added new thread to project:', newThread.name || newThread.id);
+                  } else {
+                    // Update existing project thread with latest details
+                    dispatch({
+                      type: CHAT_ACTIONS.ADD_PROJECT_THREAD,
+                      payload: { projectId, thread: newThread }
+                    });
+                    console.log('Updated project thread details:', newThread.name || newThread.id);
                   }
                 } else {
                   // Add to general threads list if it's a new thread (not already in the list)
@@ -761,6 +830,10 @@ export const ChatProvider = ({ children }) => {
                   if (!existingThread) {
                     dispatch({ type: CHAT_ACTIONS.ADD_NEW_THREAD, payload: newThread });
                     console.log('Added new thread to sidebar:', newThread.name || newThread.id);
+                  } else {
+                    // Update existing thread with latest details (including name)
+                    dispatch({ type: CHAT_ACTIONS.UPDATE_THREAD, payload: newThread });
+                    console.log('Updated thread details:', newThread.name || newThread.id);
                   }
                 }
               }
@@ -771,6 +844,245 @@ export const ChatProvider = ({ children }) => {
 
           // Log metadata for debugging
           console.log('Response metadata:', result.metadata);
+        }
+      }
+
+      return { success: true, data: result };
+    } catch (error) {
+      dispatch({ type: CHAT_ACTIONS.SET_STREAMING_ERROR, payload: error.message });
+      throw error;
+    } finally {
+      dispatch({ type: CHAT_ACTIONS.SET_STREAMING, payload: false });
+    }
+  };
+
+  // Send streaming message with file attachment
+  const sendStreamingMessageWithFile = async (message, file, threadId = null, projectId = null, llmModel = null) => {
+    try {
+      dispatch({ type: CHAT_ACTIONS.SET_STREAMING, payload: true });
+      dispatch({ type: CHAT_ACTIONS.CLEAR_STREAMING_ERROR });
+
+      // Create temporary user message with file indicator
+      const tempUserMessageId = `temp-user-${Date.now()}`;
+      const userMessage = {
+        id: tempUserMessageId,
+        message,
+        isUserMessage: true,
+        hasAttachment: true,
+        attachmentName: file.name,
+        attachmentSize: file.size,
+        createdAt: new Date().toISOString()
+      };
+
+      // Create temporary AI message for streaming
+      const tempAiMessageId = `temp-ai-${Date.now()}`;
+      const aiMessage = {
+        id: tempAiMessageId,
+        message: '',
+        response: '',
+        isUserMessage: false,
+        isStreaming: true,
+        createdAt: new Date().toISOString()
+      };
+
+      // Add messages to UI
+      dispatch({ type: CHAT_ACTIONS.ADD_MESSAGE, payload: userMessage });
+      dispatch({ type: CHAT_ACTIONS.ADD_MESSAGE, payload: aiMessage });
+
+      // Set up streaming callbacks
+      const streamCallbacks = {
+        onStart: (data) => {
+          console.log('File upload stream started:', data);
+          dispatch({ type: CHAT_ACTIONS.SET_CURRENT_STREAMING_MESSAGE, payload: aiMessage });
+        },
+        onChunk: (content, fullResponse) => {
+          dispatch({
+            type: CHAT_ACTIONS.UPDATE_MESSAGE,
+            payload: {
+              id: aiMessage.id,
+              response: fullResponse,
+              message: fullResponse,
+              isStreaming: true
+            }
+          });
+          dispatch({ type: CHAT_ACTIONS.SET_STREAMING_RESPONSE, payload: fullResponse });
+        },
+        onComplete: (fullResponse, data) => {
+          console.log('File upload stream completed:', data);
+          dispatch({
+            type: CHAT_ACTIONS.UPDATE_MESSAGE,
+            payload: {
+              id: aiMessage.id,
+              response: fullResponse,
+              message: fullResponse,
+              isStreaming: false
+            }
+          });
+          dispatch({ type: CHAT_ACTIONS.SET_CURRENT_STREAMING_MESSAGE, payload: null });
+        },
+        onError: (error) => {
+          console.error('File upload streaming error:', error);
+          dispatch({ type: CHAT_ACTIONS.SET_STREAMING_ERROR, payload: error.message });
+        },
+        onMetadata: (metadata) => {
+          console.log('File upload metadata received:', metadata);
+        }
+      };
+
+      // Determine which streaming method to use based on context
+      let result;
+      const modelToUse = llmModel || state.selectedModel;
+
+      if (projectId) {
+        // Project chat with file
+        result = await streamingService.streamProjectMessageWithFile(projectId, message, file, {
+          threadId,
+          llmModel: modelToUse,
+          ...streamCallbacks
+        });
+      } else if (threadId) {
+        // Thread chat with file
+        result = await streamingService.streamThreadMessageWithFile(message, file, {
+          threadId,
+          llmModel: modelToUse,
+          ...streamCallbacks
+        });
+      } else {
+        // Regular chat with file
+        result = await streamingService.streamChatMessageWithFile(message, file, {
+          sessionId: state.currentSessionId,
+          llmModel: modelToUse,
+          ...streamCallbacks
+        });
+      }
+
+      // Handle completion and metadata updates
+      if (result && result.metadata) {
+        const { messageId: newUserMessageId, sessionId, threadId: newThreadId } = result.metadata;
+
+        // Update message IDs if provided by backend
+        if (newUserMessageId) {
+          const newAiMessageId = `${newUserMessageId}-ai`;
+
+          // Update user message ID
+          dispatch({
+            type: CHAT_ACTIONS.UPDATE_MESSAGE_ID,
+            payload: {
+              oldId: userMessage.id,
+              newId: newUserMessageId
+            }
+          });
+
+          // Update AI message with final response and new ID
+          dispatch({
+            type: CHAT_ACTIONS.UPDATE_MESSAGE_ID_AND_CONTENT,
+            payload: {
+              oldId: aiMessage.id,
+              newId: newAiMessageId,
+              response: result.response,
+              message: result.response,
+              isStreaming: false
+            }
+          });
+        } else {
+          // Fallback: just update content without changing ID
+          dispatch({
+            type: CHAT_ACTIONS.UPDATE_MESSAGE,
+            payload: {
+              id: aiMessage.id,
+              response: result.response,
+              message: result.response,
+              isStreaming: false
+            }
+          });
+        }
+
+        // Handle conversation continuity based on metadata from response
+        if (result.metadata) {
+          const { sessionId, threadId, chatId } = result.metadata;
+
+          // Handle chatId from guest chat that becomes a thread
+          if (chatId && !projectId) {
+            // Update session ID for chat conversations if sessionId is also present
+            if (sessionId && !threadId) {
+              dispatch({ type: CHAT_ACTIONS.SET_CURRENT_SESSION_ID, payload: sessionId });
+            }
+
+            // For guest chat that becomes a thread, fetch thread details using chatId
+            try {
+              const threadResponse = await chatService.getThreadDetails(chatId);
+              if (threadResponse.success) {
+                const newThread = threadResponse.data;
+
+                // Set as current thread
+                dispatch({ type: CHAT_ACTIONS.SET_CURRENT_THREAD, payload: newThread });
+
+                // Add to general threads list if it's a new thread
+                const existingThread = state.threads.find(thread => thread.id === newThread.id);
+                if (!existingThread) {
+                  dispatch({ type: CHAT_ACTIONS.ADD_NEW_THREAD, payload: newThread });
+                  console.log('Added new thread from chatId to sidebar (file upload):', newThread.name || newThread.id);
+                } else {
+                  // Update existing thread with latest details (including name)
+                  dispatch({ type: CHAT_ACTIONS.UPDATE_THREAD, payload: newThread });
+                  console.log('Updated thread details from chatId (file upload):', newThread.name || newThread.id);
+                }
+              }
+            } catch (error) {
+              console.log('No thread found for chatId (file upload - this is normal for guest chat):', error.message);
+            }
+          } else if (sessionId && !threadId && !projectId) {
+            // Fallback: Handle sessionId for backward compatibility
+            dispatch({ type: CHAT_ACTIONS.SET_CURRENT_SESSION_ID, payload: sessionId });
+          }
+
+          // Update thread context for thread conversations
+          if (threadId && (!state.currentThread || state.currentThread.id !== threadId)) {
+            try {
+              const threadResponse = await chatService.getThreadDetails(threadId);
+              if (threadResponse.success) {
+                const newThread = threadResponse.data;
+
+                // Set as current thread
+                dispatch({ type: CHAT_ACTIONS.SET_CURRENT_THREAD, payload: newThread });
+
+                // If this is a project conversation, add to project threads
+                if (projectId) {
+                  const existingProjectThread = state.projectThreads[projectId]?.find(thread => thread.id === threadId);
+                  if (!existingProjectThread) {
+                    dispatch({
+                      type: CHAT_ACTIONS.ADD_PROJECT_THREAD,
+                      payload: { projectId, thread: newThread }
+                    });
+                    console.log('Added new thread to project (file upload):', newThread.name || newThread.id);
+                  } else {
+                    // Update existing project thread with latest details
+                    dispatch({
+                      type: CHAT_ACTIONS.ADD_PROJECT_THREAD,
+                      payload: { projectId, thread: newThread }
+                    });
+                    console.log('Updated project thread details (file upload):', newThread.name || newThread.id);
+                  }
+                } else {
+                  // Add to general threads list if it's a new thread (not already in the list)
+                  const existingThread = state.threads.find(thread => thread.id === threadId);
+                  if (!existingThread) {
+                    dispatch({ type: CHAT_ACTIONS.ADD_NEW_THREAD, payload: newThread });
+                    console.log('Added new thread to sidebar (file upload):', newThread.name || newThread.id);
+                  } else {
+                    // Update existing thread with latest details (including name)
+                    dispatch({ type: CHAT_ACTIONS.UPDATE_THREAD, payload: newThread });
+                    console.log('Updated thread details (file upload):', newThread.name || newThread.id);
+                  }
+                }
+              }
+            } catch (error) {
+              console.warn('Failed to fetch thread details (file upload):', error);
+            }
+          }
+
+          // Log metadata for debugging
+          console.log('File upload response metadata:', result.metadata);
         }
       }
 
@@ -844,11 +1156,16 @@ export const ChatProvider = ({ children }) => {
     try {
       const response = await projectService.getProjectThreads(projectId);
       if (response.success) {
+        // The API response has threads nested inside response.data.threads.threads
+        // Extract the actual threads array from the nested structure
+        const threadsData = response.data.threads;
+        const actualThreads = threadsData && threadsData.threads ? threadsData.threads : [];
+
         dispatch({
           type: CHAT_ACTIONS.SET_PROJECT_THREADS,
           payload: {
             projectId,
-            threads: response.data.threads
+            threads: actualThreads
           }
         });
       }
@@ -1082,6 +1399,7 @@ export const ChatProvider = ({ children }) => {
     setSelectedModel,
     sendMessage,
     sendStreamingMessage,
+    sendStreamingMessageWithFile,
     regenerateMessage,
     setSessionId,
     createProject,
