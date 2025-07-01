@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useChat } from '../../../contexts/ChatContext';
 import MarkdownRenderer from '../../common/MarkdownRenderer';
+import { AuthenticatedImage } from '../../../hooks/useAuthenticatedFile';
+import chatService from '../../../services/chatService';
 import './MessageList.css';
 
 const MessageList = () => {
@@ -14,12 +16,27 @@ const MessageList = () => {
     regenerateMessage,
     regeneratingMessages,
     regenerationError,
-    clearRegenerationError
+    clearRegenerationError,
+    selectedModel
   } = useChat();
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const [copiedMessages, setCopiedMessages] = useState(new Set());
+
+  // Helper function to get full attachment URL
+  const getAttachmentUrl = (url) => {
+    if (!url) return '';
+
+    // If it's already a full URL (starts with http), return as is
+    if (url.startsWith('http')) {
+      return url;
+    }
+
+    // If it's a relative URL, prepend the API base URL
+    const baseUrl = process.env.REACT_APP_API_URL;
+    return `${baseUrl}${url}`;
+  };
 
   // Scroll to bottom when new messages arrive or thread changes
   useEffect(() => {
@@ -88,8 +105,8 @@ const MessageList = () => {
       // Clear any previous regeneration errors
       clearRegenerationError();
 
-      // Call the regenerate function with the message ID
-      await regenerateMessage(message.id);
+      // Call the regenerate function with the message ID and selected model
+      await regenerateMessage(message.id, selectedModel);
     } catch (error) {
       console.error('Failed to regenerate message:', error);
     }
@@ -182,20 +199,100 @@ const MessageList = () => {
                   {/* Attachment Display */}
                   {message.attachmentName && (
                     <div className="message-list__attachment">
-                      <div className="message-list__attachment-icon">
-                        {message.attachmentType?.startsWith('image/') ? '🖼️' :
-                         message.attachmentType === 'application/pdf' ? '📄' :
-                         message.attachmentType?.includes('word') ? '📝' :
-                         message.attachmentType?.includes('sheet') ? '📊' : '📎'}
-                      </div>
-                      <div className="message-list__attachment-info">
-                        <div className="message-list__attachment-name">{message.attachmentName}</div>
-                        {message.attachmentSize && (
-                          <div className="message-list__attachment-size">
-                            {(message.attachmentSize / 1024 / 1024).toFixed(2)} MB
+                      {/* Display image if it's an image attachment with URL */}
+                      {message.attachmentType?.startsWith('image/') && (message.attachmentUrl || message.attachmentS3Url) ? (
+                        <div className="message-list__attachment-image-container">
+                          <AuthenticatedImage
+                            src={message.attachmentUrl || message.attachmentS3Url}
+                            alt={message.attachmentName}
+                            className="message-list__attachment-image"
+                            onClick={() => {
+                              // For authenticated files, we need to handle download differently
+                              const fileUrl = message.attachmentUrl || message.attachmentS3Url;
+                              if (fileUrl.startsWith('http')) {
+                                window.open(fileUrl, '_blank');
+                              } else {
+                                // Create a download link for authenticated files
+                                const link = document.createElement('a');
+                                link.href = getAttachmentUrl(fileUrl);
+                                link.download = message.attachmentName;
+                                link.target = '_blank';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <div className="message-list__attachment-info">
+                            <div className="message-list__attachment-name">{message.attachmentName}</div>
+                            {message.attachmentSize && (
+                              <div className="message-list__attachment-size">
+                                {(message.attachmentSize / 1024 / 1024).toFixed(2)} MB
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        /* Non-image attachments or images without URL */
+                        <div className="message-list__attachment-file">
+                          <div className="message-list__attachment-icon">
+                            {message.attachmentType?.startsWith('image/') ? '🖼️' :
+                             message.attachmentType === 'application/pdf' ? '📄' :
+                             message.attachmentType?.includes('word') ? '📝' :
+                             message.attachmentType?.includes('sheet') ? '📊' : '📎'}
+                          </div>
+                          <div className="message-list__attachment-info">
+                            <div className="message-list__attachment-name">
+                              {(message.attachmentUrl || message.attachmentS3Url) ? (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const fileUrl = message.attachmentUrl || message.attachmentS3Url;
+                                      if (fileUrl.startsWith('http')) {
+                                        // External URL, open directly
+                                        window.open(fileUrl, '_blank');
+                                      } else {
+                                        // Authenticated file, download via blob
+                                        const blob = await chatService.getFile(fileUrl);
+                                        const url = URL.createObjectURL(blob);
+                                        const link = document.createElement('a');
+                                        link.href = url;
+                                        link.download = message.attachmentName;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        URL.revokeObjectURL(url);
+                                      }
+                                    } catch (error) {
+                                      console.error('Failed to download file:', error);
+                                      alert('Failed to download file. Please try again.');
+                                    }
+                                  }}
+                                  className="message-list__attachment-link"
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    padding: 0,
+                                    color: 'inherit',
+                                    textDecoration: 'underline',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {message.attachmentName}
+                                </button>
+                              ) : (
+                                message.attachmentName
+                              )}
+                            </div>
+                            {message.attachmentSize && (
+                              <div className="message-list__attachment-size">
+                                {(message.attachmentSize / 1024 / 1024).toFixed(2)} MB
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

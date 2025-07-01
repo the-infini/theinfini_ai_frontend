@@ -207,15 +207,23 @@ class StreamingService {
    * Uses messageId to regenerate AI response
    */
   async streamRegenerateMessage(messageId, options = {}) {
-    const { llmModel, ...streamOptions } = options;
+    const { llmModel = 'gpt-3.5-turbo', attachmentS3Url, ...streamOptions } = options;
 
     const data = {
-      messageId
+      messageId,
+      llmModel // Always include llmModel parameter
     };
 
-    // Include llmModel if provided
-    if (llmModel) {
-      data.llmModel = llmModel;
+    // Include attachment URL if provided for context
+    if (attachmentS3Url) {
+      // Remove the API base URL prefix if present
+      let cleanAttachmentUrl = attachmentS3Url;
+      const apiPrefix = 'http://localhost:5529/api/files/';
+      if (attachmentS3Url.startsWith(apiPrefix)) {
+        cleanAttachmentUrl = attachmentS3Url.replace(apiPrefix, '');
+      }
+      // Send as attachmentUrl instead of attachmentS3Url
+      data.attachmentUrl = cleanAttachmentUrl;
     }
 
     const response = await this.createStreamingRequest('/chat/regenerate', data);

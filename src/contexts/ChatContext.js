@@ -512,6 +512,28 @@ export const ChatProvider = ({ children }) => {
         llmModel: apiMessage.llmModel
       };
 
+      // Add attachment data if present (new API structure)
+      if (apiMessage.attachment) {
+        userMessage.attachmentName = apiMessage.attachment.name;
+        userMessage.attachmentType = apiMessage.attachment.type;
+        userMessage.attachmentSize = apiMessage.attachment.size;
+        userMessage.attachmentUrl = apiMessage.attachment.url;
+        userMessage.attachmentFileId = apiMessage.attachment.fileId;
+        userMessage.attachmentStorageType = apiMessage.attachment.storageType;
+        // Keep backward compatibility with old field names
+        userMessage.attachmentS3Url = apiMessage.attachment.url;
+      }
+      // Fallback for old API structure (backward compatibility)
+      else if (apiMessage.attachmentName) {
+        userMessage.attachmentName = apiMessage.attachmentName;
+        userMessage.attachmentType = apiMessage.attachmentType;
+        userMessage.attachmentSize = apiMessage.attachmentSize;
+        userMessage.attachmentS3Url = apiMessage.attachmentS3Url;
+        userMessage.attachmentPath = apiMessage.attachmentPath;
+        userMessage.attachmentS3Key = apiMessage.attachmentS3Key;
+        userMessage.attachmentStorageType = apiMessage.attachmentStorageType;
+      }
+
       // Create AI response message
       const aiMessage = {
         id: `${apiMessage.id}-ai`,
@@ -1304,6 +1326,15 @@ export const ChatProvider = ({ children }) => {
         throw new Error('Cannot regenerate this message. Only AI responses from completed conversations can be regenerated.');
       }
 
+      // Find the corresponding user message to get attachment data
+      let attachmentS3Url = null;
+      const userMessageId = `${actualMessageId}-user`;
+      const userMessage = state.messages.find(msg => msg.id === userMessageId);
+      if (userMessage && (userMessage.attachmentUrl || userMessage.attachmentS3Url)) {
+        // Use the new attachmentUrl field, fallback to old attachmentS3Url for backward compatibility
+        attachmentS3Url = userMessage.attachmentUrl || userMessage.attachmentS3Url;
+      }
+
       // Create placeholder for regenerated response
       const regeneratedMessage = {
         id: `regenerated-${Date.now()}`,
@@ -1366,7 +1397,8 @@ export const ChatProvider = ({ children }) => {
 
       // Call the regeneration service
       const result = await chatService.regenerateMessage(actualMessageId, {
-        llmModel,
+        llmModel: llmModel || state.selectedModel, // Use selected model if not provided
+        attachmentS3Url,
         ...streamCallbacks
       });
 

@@ -119,6 +119,20 @@ class ChatService {
     }
   }
 
+  // Get file with authentication
+  async getFile(fileUrl) {
+    try {
+      // Extract the file path from the URL
+      const filePath = fileUrl.replace('/api', '');
+      const response = await apiClient.get(filePath, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Helper method to handle errors
   handleError(error) {
     if (error.response?.data?.message) {

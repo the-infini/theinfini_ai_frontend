@@ -275,3 +275,5 @@ error.log
 # Temporary files
 *.tmp
 *.temp
+Dockerfile
+deploy-frontend.sh
