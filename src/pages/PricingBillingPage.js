@@ -105,6 +105,25 @@ const PricingBillingPage = () => {
     loadData();
   };
 
+  const handleTabChange = async (tabId) => {
+    setActiveTab(tabId);
+
+    // If switching to overview tab, refresh subscription data
+    if (tabId === 'overview' && user) {
+      try {
+        console.log('🔄 Refreshing subscription data for Overview tab: GET /api/subscription/current');
+        const subscriptionResponse = await subscriptionService.getCurrentSubscription();
+        console.log('✅ Overview tab subscription refresh response:', subscriptionResponse);
+        if (subscriptionResponse.success) {
+          setCurrentSubscription(subscriptionResponse.data);
+        }
+      } catch (subscriptionError) {
+        console.log('❌ Failed to refresh subscription data:', subscriptionError);
+        // Don't show error to user as this is just a refresh
+      }
+    }
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'plans', label: 'Plans & Pricing', icon: '💳' },
@@ -149,7 +168,7 @@ const PricingBillingPage = () => {
           <button
             key={tab.id}
             className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
           >
             <span className="tab-icon">{tab.icon}</span>
             <span className="tab-label">{tab.label}</span>

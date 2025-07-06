@@ -14,6 +14,8 @@ const PricingPlans = ({ plans, currentSubscription, onUpdate }) => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [orderData, setOrderData] = useState(null);
 
+
+
   const handleSubscribe = async (plan) => {
     if (!user) {
       navigate('/signin');
@@ -21,7 +23,22 @@ const PricingPlans = ({ plans, currentSubscription, onUpdate }) => {
     }
 
     if (plan.type === 'EXPLORER') {
-      // Explorer is free, no payment needed
+      // Handle downgrade to free plan
+      if (currentSubscription && currentSubscription.planType !== 'EXPLORER') {
+        try {
+          setLoading(true);
+          setError('');
+
+          const response = await subscriptionService.downgradeSubscription(plan.type);
+          if (response.success) {
+            onUpdate();
+          }
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      }
       return;
     }
 
@@ -29,11 +46,27 @@ const PricingPlans = ({ plans, currentSubscription, onUpdate }) => {
       setLoading(true);
       setError('');
 
-      const response = await subscriptionService.createSubscriptionOrder(plan.type);
+      let response;
+      const actionType = getActionType(plan.type);
+
+      if (actionType === 'upgrade') {
+        response = await subscriptionService.upgradeSubscription(plan.type);
+      } else if (actionType === 'downgrade') {
+        response = await subscriptionService.downgradeSubscription(plan.type);
+      } else {
+        response = await subscriptionService.createSubscriptionOrder(plan.type);
+      }
+
       if (response.success) {
-        setSelectedPlan(plan);
-        setOrderData(response.data);
-        setShowCheckout(true);
+        // If it's a free downgrade, just update the UI
+        if (response.data.plan?.price === 0) {
+          onUpdate();
+        } else {
+          // For paid plans, show checkout
+          setSelectedPlan(plan);
+          setOrderData(response.data);
+          setShowCheckout(true);
+        }
       }
     } catch (err) {
       setError(err.message);
@@ -78,30 +111,64 @@ const PricingPlans = ({ plans, currentSubscription, onUpdate }) => {
   };
 
   const isCurrentPlan = (planType) => {
-    return currentSubscription?.planType === planType;
+    if (!currentSubscription) return false;
+
+    // Handle different possible data structures
+    const currentPlanType = currentSubscription.planType ||
+                           currentSubscription.plan?.type ||
+                           currentSubscription.type;
+
+
+
+    return currentPlanType === planType;
   };
 
-  const canUpgrade = (planType) => {
-    if (!currentSubscription) return true;
+  const getActionType = (planType) => {
+    if (!currentSubscription) return 'subscribe';
+
+    // Handle different possible data structures
+    const currentPlanType = currentSubscription.planType ||
+                           currentSubscription.plan?.type ||
+                           currentSubscription.type;
 
     const planHierarchy = { 'EXPLORER': 0, 'CREATOR': 1, 'PRO': 2 };
-    const currentLevel = planHierarchy[currentSubscription.planType] || 0;
+    const currentLevel = planHierarchy[currentPlanType] || 0;
     const targetLevel = planHierarchy[planType] || 0;
 
-    return targetLevel > currentLevel;
+
+
+    if (targetLevel > currentLevel) return 'upgrade';
+    if (targetLevel < currentLevel) return 'downgrade';
+    return 'current';
   };
+
+
 
   const getButtonText = (plan) => {
     if (!user) return 'Sign In to Subscribe';
     if (isCurrentPlan(plan.type)) return 'Current Plan';
-    if (plan.type === 'EXPLORER') return 'Free Plan';
-    if (canUpgrade(plan.type)) return 'Upgrade';
+
+    const actionType = getActionType(plan.type);
+
+
+
+    if (actionType === 'upgrade') return 'Upgrade';
+    if (actionType === 'downgrade') return 'Downgrade';
+    if (actionType === 'current') return 'Current Plan';
+
+    // For new subscriptions (no current subscription)
+    if (actionType === 'subscribe') {
+      if (plan.type === 'EXPLORER') return 'Free Plan';
+      return 'Subscribe';
+    }
+
+    // Fallback - should not reach here
+    console.warn('⚠️ Unexpected button state:', { plan: plan.type, actionType });
     return 'Subscribe';
   };
 
   const getButtonDisabled = (plan) => {
-    return loading || isCurrentPlan(plan.type) ||
-           (plan.type === 'EXPLORER' && currentSubscription?.planType !== 'EXPLORER');
+    return loading || isCurrentPlan(plan.type);
   };
 
   const formatBillingCycle = (cycle) => {

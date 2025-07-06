@@ -31,6 +31,26 @@ class SubscriptionService {
     }
   }
 
+  // Upgrade subscription
+  async upgradeSubscription(planType) {
+    try {
+      const response = await apiClient.post('/subscription/upgrade', { planType });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Downgrade subscription
+  async downgradeSubscription(planType) {
+    try {
+      const response = await apiClient.post('/subscription/downgrade', { planType });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Cancel subscription
   async cancelSubscription(reason = '') {
     try {
