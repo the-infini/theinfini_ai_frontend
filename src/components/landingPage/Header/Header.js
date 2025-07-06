@@ -79,6 +79,14 @@ const Header = () => {
               </li>
               <li>
                 <button
+                  onClick={() => scrollToSection('pricing')}
+                  className="header__nav-link"
+                >
+                  Pricing
+                </button>
+              </li>
+              <li>
+                <button
                   onClick={() => scrollToSection('about')}
                   className="header__nav-link"
                 >
@@ -148,6 +156,14 @@ const Header = () => {
                 className="header__mobile-nav-link"
               >
                 Features
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => scrollToSection('pricing')}
+                className="header__mobile-nav-link"
+              >
+                Pricing
               </button>
             </li>
             <li>

@@ -7,6 +7,7 @@ import {
   CTASection,
   Footer
 } from '../components/landingPage';
+import PricingSection from '../components/landingPage/PricingSection/PricingSection';
 
 const LandingPage = () => {
   return (
@@ -15,6 +16,7 @@ const LandingPage = () => {
       <main>
         <HeroSection />
         <FeaturesSection />
+        <PricingSection />
         <AboutSection />
         <CTASection />
       </main>

@@ -5,7 +5,6 @@ import './ChatInput.css';
 
 const ChatInput = forwardRef(({ onSendMessage, onSendMessageWithFile, disabled = false, isLoading = false }, ref) => {
   const [message, setMessage] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const fileAttachmentRef = useRef(null);
   const maxLength = 3000;
@@ -63,12 +62,6 @@ const ChatInput = forwardRef(({ onSendMessage, onSendMessageWithFile, disabled =
     setSelectedFile(null);
   };
 
-  const handleTalk = () => {
-    // Handle voice recording
-    setIsRecording(!isRecording);
-    console.log('Talk clicked');
-  };
-
   const handleModelSelect = (modelId) => {
     console.log('Model selected:', modelId);
   };
@@ -113,21 +106,6 @@ const ChatInput = forwardRef(({ onSendMessage, onSendMessageWithFile, disabled =
             onFileRemove={handleFileRemove}
             disabled={disabled || isLoading}
           />
-
-          <button
-            type="button"
-            className={`chat-input__action-btn ${isRecording ? 'chat-input__action-btn--recording' : ''}`}
-            onClick={handleTalk}
-            title="Talk"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 1C10.3431 1 9 2.34315 9 4V12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12V4C15 2.34315 13.6569 1 12 1Z" stroke="currentColor" strokeWidth="2"/>
-              <path d="M19 10V12C19 16.4183 15.4183 20 11 20H13C17.4183 20 21 16.4183 21 12V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M12 20V23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M8 23H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span>Talk</span>
-          </button>
 
           <div className="chat-input__model-selector">
             <ModelSelector

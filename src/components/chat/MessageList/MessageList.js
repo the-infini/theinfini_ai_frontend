@@ -114,13 +114,6 @@ const MessageList = () => {
 
   const handleUpgradeCredits = () => {
     navigate('/profile');
-    // Scroll to plan management section after navigation
-    setTimeout(() => {
-      const planSection = document.querySelector('.plan-management-section');
-      if (planSection) {
-        planSection.scrollIntoView({ behavior: 'smooth' });
-      }
-    }, 100);
   };
 
   if (messages.length === 0 && !isLoading) {

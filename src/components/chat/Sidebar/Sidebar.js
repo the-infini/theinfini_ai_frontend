@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useChat } from '../../../contexts/ChatContext';
 import { ConfirmationModal } from '../../common';
 import ProjectModal from '../ProjectModal/ProjectModal';
+
 import './Sidebar.css';
 
 const Sidebar = ({ isOpen, onToggle }) => {

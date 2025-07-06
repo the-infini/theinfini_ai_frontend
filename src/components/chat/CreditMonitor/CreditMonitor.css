@@ -1,0 +1,221 @@
+.credit-monitor {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid #e9ecef;
+  font-size: 0.875rem;
+}
+
+.credit-monitor__loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #fcd469;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.credit-monitor__error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #dc3545;
+  font-size: 0.8rem;
+}
+
+.error-icon {
+  font-size: 0.9rem;
+}
+
+.error-text {
+  flex: 1;
+}
+
+.credit-monitor__no-subscription {
+  text-align: center;
+}
+
+.no-sub-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.no-sub-icon {
+  font-size: 1.2rem;
+}
+
+.no-sub-text {
+  color: #6c757d;
+  font-size: 0.8rem;
+}
+
+.credit-monitor__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.plan-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.plan-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.credit-monitor__credits {
+  margin-bottom: 8px;
+}
+
+.credits-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.credits-amount {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.credits-label {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.credits-bar {
+  height: 4px;
+  background: #e9ecef;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.credits-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 2px;
+}
+
+.credit-monitor__reset {
+  margin-bottom: 8px;
+}
+
+.reset-text {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.credit-monitor__warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-top: 8px;
+}
+
+.warning-icon {
+  font-size: 0.9rem;
+  color: #856404;
+}
+
+.warning-text {
+  flex: 1;
+  color: #856404;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.upgrade-btn-small {
+  background: #fcd469;
+  color: #2c3e50;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.upgrade-btn-small:hover {
+  background: #f1c40f;
+  transform: translateY(-1px);
+}
+
+.upgrade-btn-small:active {
+  transform: translateY(0);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .credit-monitor {
+    margin: 6px 0;
+    padding: 10px;
+  }
+
+  .credits-amount {
+    font-size: 1rem;
+  }
+
+  .plan-name {
+    font-size: 0.85rem;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .credit-monitor {
+    background: #2c3e50;
+    border-color: #34495e;
+  }
+
+  .plan-name,
+  .credits-amount {
+    color: #ecf0f1;
+  }
+
+  .credits-label,
+  .reset-text {
+    color: #95a5a6;
+  }
+
+  .credits-bar {
+    background: #34495e;
+  }
+
+  .credit-monitor__error {
+    color: #e74c3c;
+  }
+
+  .no-sub-text {
+    color: #95a5a6;
+  }
+}

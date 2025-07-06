@@ -1,7 +1,7 @@
 import apiClient from './apiClient';
 
 class UserService {
-  // Get user profile with credits
+  // Get user profile
   async getProfile() {
     try {
       const response = await apiClient.get('/user/profile');
@@ -71,35 +71,7 @@ class UserService {
     }
   }
 
-  // Get credit summary
-  async getCreditSummary() {
-    try {
-      const response = await apiClient.get('/user/credits');
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
 
-  // Get credit transactions
-  async getCreditTransactions(params = {}) {
-    try {
-      const response = await apiClient.get('/user/credits/transactions', { params });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  // Update user plan
-  async updatePlan(plan) {
-    try {
-      const response = await apiClient.put('/user/plan', { plan });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
 
   // Export user data
   async exportUserData() {

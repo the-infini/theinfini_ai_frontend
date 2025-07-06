@@ -4,15 +4,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import userService from '../../services/userService';
 import ProfilePicture from './ProfilePicture';
 import PasswordChange from './PasswordChange';
-import CreditDisplay from './CreditDisplay';
-import PlanManagement from './PlanManagement';
 import './Profile.css';
 
 const UserProfile = () => {
   const { updateUser, logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
-  const [credits, setCredits] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
@@ -33,7 +30,6 @@ const UserProfile = () => {
       const response = await userService.getProfile();
       if (response.success) {
         setProfile(response.data.profile);
-        setCredits(response.data.credits);
         setFormData({
           firstName: response.data.profile.firstName || '',
           lastName: response.data.profile.lastName || '',
@@ -248,25 +244,35 @@ const UserProfile = () => {
           </div>
         </div>
 
-        {/* Credits Section */}
-        <div className="profile-section">
-          <CreditDisplay credits={credits} onUpdate={setCredits} />
-        </div>
-
-        {/* Plan Management Section */}
-        <div className="profile-section">
-          <PlanManagement
-            profile={profile}
-            onUpdate={(updatedProfile) => {
-              setProfile(updatedProfile);
-              updateUser(updatedProfile);
-            }}
-          />
-        </div>
-
         {/* Password Change Section */}
         <div className="profile-section">
           <PasswordChange />
+        </div>
+
+        {/* Subscription Section */}
+        <div className="profile-section">
+          <div className="section-header">
+            <h2>Subscription & Billing</h2>
+          </div>
+          <div className="profile-form">
+            <div className="subscription-section">
+              <p className="subscription-description">
+                Manage your subscription, view billing history, and upgrade your plan.
+              </p>
+              <button
+                onClick={() => navigate('/pricing-billing')}
+                className="pricing-billing-btn"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                Pricing & Billing
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Logout Section */}
